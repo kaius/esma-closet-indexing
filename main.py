@@ -22,6 +22,7 @@ import sys
 from src.fetch_data import fetch_pensionikeskus, load_benchmark, load_from_excel, load_from_csv
 from src.calculations import analyse_all
 from src.report import print_report, save_csv
+from src.demo_data import generate_demo_data
 
 
 def parse_args():
@@ -48,12 +49,29 @@ def parse_args():
         "--no-cache", action="store_true",
         help="Ignore cached files and re-download everything"
     )
+    parser.add_argument(
+        "--demo", action="store_true",
+        help="Run with synthetic data (no internet needed) to preview the analysis"
+    )
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
     use_cache = not args.no_cache
+
+    # --- Demo mode ---
+    if args.demo:
+        print("Running in DEMO mode with synthetic data (actual fund names, simulated NAVs)")
+        print("=" * 70)
+        nav_df, benchmark_nav = generate_demo_data()
+        benchmark_nav.name = "URTH"
+        print(f"Generated {len(nav_df.columns)} funds, {len(nav_df)} months of synthetic data")
+        print(f"Date range: {nav_df.index.min().date()} to {nav_df.index.max().date()}\n")
+        results = analyse_all(nav_df, benchmark_nav)
+        print_report(results)
+        save_csv(results, "demo_results.csv")
+        return
 
     # --- Load fund NAV data ---
     if args.excel:
